@@ -23,7 +23,7 @@ exports.createDocument = async (req, res) => {
         resource_type: 'auto', 
     });
     console.log(result)
-    //hhhjhjgjh
+   
     const doc = await Document({
         doc_name,
         description, 
