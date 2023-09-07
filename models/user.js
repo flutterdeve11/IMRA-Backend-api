@@ -26,7 +26,7 @@
         
       // },
      
-      avatar: Buffer,
+      avatar: String,
       tokens: [{ type: Object }],
      
  });

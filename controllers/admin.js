@@ -1,29 +1,48 @@
 const jwt = require('jsonwebtoken');
 const  Admin = require('../models/admin');
-const sharp = require('sharp');
-const multer = require('multer');
+// const {cloudinary} = require('../middlewares/clouddary')
+
+const cloudinary = require('cloudinary').v2;
+          
+cloudinary.config({ 
+  cloud_name: 'dzq1h0xyu', 
+  api_key: '345126432123499', 
+  api_secret: 'cqCvcU_hqshoESszVszEnB5-D_8' 
+});
 
 // for super admin
-exports.createAdmin = async (req, res)=>{
-    const {fullname, email, phonenumber,password, type} = req.body;
-    const isNewAdmin = await Admin.isThisEmailInUse(email);
-    if(!isNewAdmin)
-       return res.json({
-        success:false,
-        message:'This email is already in use ,try sing-in'
-       });
-       const admin = await Admin({
-        fullname,
-        email,
-        phonenumber,
-        password,
-        type,
-       });
-       await admin .save();
-       res.json({
-        success:true,admin
-       });
-  } ;
+exports.createAdmin = async (req, res) => {
+  const { fullname, email, phonenumber, password, type, title } = req.body;
+  //const isNewAdmin = await Admin.isThisEmailInUse(email);
+  // if (!isNewAdmin)
+  //     return res.json({
+  //         success: false,
+  //         message: "This email is already in use ,try sing-in",
+  //     });
+  if (!req.file) {
+    return res.status(400).json({ error: "No image file provided" });
+}
+  const result = await cloudinary.uploader.upload(req.file.path);
+  console.log(result)
+  
+  const admin = await Admin({
+      fullname,
+      email,
+      phonenumber,
+      password,
+      type,
+      title,
+      avatar: result.secure_url
+  });
+  await admin.save();
+  res.json({
+      success: true,
+      admin,
+  });
+};
+
+
+
   //for hospital admin
   exports.createHospitalAdmin = async (req, res)=>{
     const {fullname, email, phonenumber,password, type} = req.body;

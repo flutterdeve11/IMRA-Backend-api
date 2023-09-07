@@ -2,18 +2,20 @@ const express = require('express');
 const router = express.Router();
 const Hospital = require('../models/hospital');
 const multer=  require('multer');
-const sharp = require('sharp');
 const User= require('../models/user');
 const Admin = require('../models/admin');
+const Document= require('../models/documents')
 
 const {
     createUser,
-    createDocument,
     userSignIn,
-    
    // uploadProfile,
     signOut,
 } = require('../controllers/user');
+
+const{
+  createDocument
+}= require('../controllers/document_controller')
 
 //for admin controller
 const {
@@ -37,57 +39,66 @@ const {
  // validateDoc,
   userVlidation,
   validateUserSignIn,
-}= require('../middlewares/validation/user');
+} = require('../middlewares/validation/user')
+const storage = multer.diskStorage({})
+// const fileFilter = (req, file, cb) => {
+//     if (!file.mimetype.startsWith("image")) {
+//         return cb(new Error("Only image files are allowed"), false);
+//     } else {
+//         cb(null, true);
+//     }
+// };
+const upload = multer({ storage, });
 
 
-const storage = multer.memoryStorage();
-//diskStorage({});
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image')) {
-      cb(null, true);
-    } else {
-      cb('invalid image file!', false);
-    }
-  };
-const uploads = multer({ storage, fileFilter });
- router.post('/create-user',validateUserSignUp,userVlidation,createUser);
- router.post('/create-superadmin',validateUserSignUp,userVlidation,createAdmin);
+
+ router.post('/create-user',
+ //upload.single('avatar'),
+ validateUserSignUp,
+ userVlidation,createUser);
+
+ router.post('/create-superadmin',upload.single('avatar'),
+ //validateUserSignUp,
+ 
+ //userVlidation,
+ 
+ createAdmin);
  router.post('/create-hospitaladmin',validateUserSignUp,userVlidation,createHospitalAdmin);
  router.post('/create-hospital-recept',validateUserSignUp,userVlidation,createReception);
- router.post('/create-document',createDocument);
+ router.post('/create-document',upload.single('document'), createDocument);
  router.post('/sign-in',validateUserSignIn,userVlidation,userSignIn);
  router.post('/sign-in-admin',validateUserSignIn,userVlidation,adminSignIn);
  router.post('/sign-out',isAuth,signOut);
- router.post(
-    '/upload-profile',
-    isAuth,
-    uploads.single('profile'),
-    async (req,res)=>{
-   const { user }=req;
-   if (!user)
-   return res
-     .status(401)
-     .json({ success: false, message: 'unauthorized access!' });
-     try {
-        const profileBuffer = req.file.buffer;
-        //const imageInfo = await sharp(profileBuffer).metadata();
-     const {width, height} = await sharp(profileBuffer).metadata();
-     const avatar =await sharp(profileBuffer).resize(Math.round(width*0.5),Math.round(height*0.5)).toBuffer()
+//  router.post(
+//     '/upload-profile',
+//     isAuth,
+//     uploads.single('profile'),
+//     async (req,res)=>{
+//    const { user }=req;
+//    if (!user)
+//    return res
+//      .status(401)
+//      .json({ success: false, message: 'unauthorized access!' });
+//      try {
+//         const profileBuffer = req.file.buffer;
+//         //const imageInfo = await sharp(profileBuffer).metadata();
+//      const {width, height} = await sharp(profileBuffer).metadata();
+//      const avatar =await sharp(profileBuffer).resize(Math.round(width*0.5),Math.round(height*0.5)).toBuffer()
     
-        await User.findByIdAndUpdate(user._id,{avatar});
-       res 
-       .status(201)
-       .json({ success: true, message: 'Your profile has updated!' });
-     } catch (error) {
-        res
-        .status(500)
-        .json({ success: false, message: 'server error, try after some time' });
-        console.log('error while upload profile image',error.message)
-     }
+//         await User.findByIdAndUpdate(user._id,{avatar});
+//        res 
+//        .status(201)
+//        .json({ success: true, message: 'Your profile has updated!' });
+//      } catch (error) {
+//         res
+//         .status(500)
+//         .json({ success: false, message: 'server error, try after some time' });
+//         console.log('error while upload profile image',error.message)
+//      }
      
-    }
-   // uploadProfile
-  );
+//     }
+//    // uploadProfile
+//   );
   router.post('/create-hospital',createHospital);
   //get api all hospital.
   router.get('/all-hospitals', async (req, res) => {
@@ -110,6 +121,17 @@ const uploads = multer({ storage, fileFilter });
       res.status(500).json({ success: false, message: 'An error occurred.' });
     }
   });
+  //get all document api
+  router.get('/all-doc', async (req, res) => {
+    try {
+      const data = await Document.find({},);
+      
+      res.json({ success: true, data});
+    } catch (error) {
+      console.error('Error fetching Document:', error);
+      res.status(500).json({ success: false, message: 'An error occurred.' });
+    }
+  });
    //get api all admin.
    router.get('/all-admin', async (req, res) => {
     try {
@@ -121,6 +143,23 @@ const uploads = multer({ storage, fileFilter });
       res.status(500).json({ success: false, message: 'An error occurred.' });
     }
   });
+  //get api single  admin.
+  router.get('/single-admin/:adminId', async (req, res) => {
+    try {
+      const adminId = req.params.adminId; // Get the admin ID from the URL parameter
+      const data = await Admin.findById(adminId, "-password -tokens"); // Find the admin by ID
+  
+      if (!data) {
+        return res.status(404).json({ success: false, message: 'Admin not found' });
+      }
+  
+      res.json({ success: true,data });
+    } catch (error) {
+      console.error('Error fetching single admin:', error);
+      res.status(500).json({ success: false, message: 'An error occurred.' });
+    }
+  });
+ 
 //// get all reception api
   router.get('/all-reception', async (req, res) => {
     try {
