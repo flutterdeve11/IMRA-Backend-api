@@ -23,7 +23,7 @@ exports.createAdmin = async (req, res) => {
     return res.status(400).json({ error: "No image file provided" });
 }
   const result = await cloudinary.uploader.upload(req.file.path);
-  console.log(result)
+  // console.log(result)
   
   const admin = await Admin({
       fullname,

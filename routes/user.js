@@ -5,10 +5,18 @@ const multer=  require('multer');
 const User= require('../models/user');
 const Admin = require('../models/admin');
 const Document= require('../models/documents')
+const cloudinary = require('cloudinary').v2;
+          
+cloudinary.config({ 
+  cloud_name: 'dzq1h0xyu', 
+  api_key: '345126432123499', 
+  api_secret: 'cqCvcU_hqshoESszVszEnB5-D_8' 
+});
 
 const {
     createUser,
     userSignIn,
+    createProfile,
    // uploadProfile,
     signOut,
 } = require('../controllers/user');
@@ -39,7 +47,8 @@ const {
  // validateDoc,
   userVlidation,
   validateUserSignIn,
-} = require('../middlewares/validation/user')
+} = require('../middlewares/validation/user');
+const { response } = require('express');
 const storage = multer.diskStorage({})
 // const fileFilter = (req, file, cb) => {
 //     if (!file.mimetype.startsWith("image")) {
@@ -51,17 +60,17 @@ const storage = multer.diskStorage({})
 const upload = multer({ storage, });
 
 
-
+// creat user api start
  router.post('/create-user',
  //upload.single('avatar'),
- validateUserSignUp,
+  validateUserSignUp,
  userVlidation,createUser);
 
+
+// creat admin api start
  router.post('/create-superadmin',upload.single('avatar'),
  //validateUserSignUp,
- 
  //userVlidation,
- 
  createAdmin);
  router.post('/create-hospitaladmin',validateUserSignUp,userVlidation,createHospitalAdmin);
  router.post('/create-hospital-recept',validateUserSignUp,userVlidation,createReception);
@@ -69,37 +78,40 @@ const upload = multer({ storage, });
  router.post('/sign-in',validateUserSignIn,userVlidation,userSignIn);
  router.post('/sign-in-admin',validateUserSignIn,userVlidation,adminSignIn);
  router.post('/sign-out',isAuth,signOut);
-//  router.post(
-//     '/upload-profile',
-//     isAuth,
-//     uploads.single('profile'),
-//     async (req,res)=>{
-//    const { user }=req;
-//    if (!user)
-//    return res
-//      .status(401)
-//      .json({ success: false, message: 'unauthorized access!' });
-//      try {
-//         const profileBuffer = req.file.buffer;
-//         //const imageInfo = await sharp(profileBuffer).metadata();
-//      const {width, height} = await sharp(profileBuffer).metadata();
-//      const avatar =await sharp(profileBuffer).resize(Math.round(width*0.5),Math.round(height*0.5)).toBuffer()
-    
-//         await User.findByIdAndUpdate(user._id,{avatar});
-//        res 
-//        .status(201)
-//        .json({ success: true, message: 'Your profile has updated!' });
-//      } catch (error) {
-//         res
-//         .status(500)
-//         .json({ success: false, message: 'server error, try after some time' });
-//         console.log('error while upload profile image',error.message)
-//      }
-     
-//     }
-//    // uploadProfile
-//   );
-  router.post('/create-hospital',createHospital);
+router.post('/create-hospital',createHospital);
+
+// creat user profile api start
+ router.post('/create-profile/:userId', upload.single('avatar'), async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const { date_of_birth, country, address } = req.body;
+
+    // Upload the image to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path);
+
+    // Update the user's profile in the database using User.findByIdAndUpdate
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        date_of_birth: date_of_birth,
+        address: address,
+        country: country,
+        avatar: result.secure_url,
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'User profile created successfully' });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
   //get api all hospital.
   router.get('/all-hospitals', async (req, res) => {
     try {
@@ -314,38 +326,6 @@ router.delete('/delete-reception/:id', async (req, res) => {
     }
   });
 
-  //update user api
-  router.patch('/update-user/:id', async (req, res) => {
-    const userId = req.params.id;
-    const updatedData = req.body;
-  
-    try {
-      const updatedUser = await User.findByIdAndUpdate(
-        userId,
-        updatedData,
-        { new: true }
-      );
-  
-      if (!updatedUser) {
-        return res.status(404).json({
-          success: false,
-          message: 'User not found.',
-        });
-      }
-  
-      res.json({
-        success: true,
-        message: 'User updated successfully.',
-        data: updatedUser,
-      });
-    } catch (error) {
-      console.error('Error updating user:', error);
-      res.status(500).json({
-        success: false,
-        message: 'An error occurred while updating the user.',
-      });
-    }
-  });
   
 // reset password
 // Reset password using token
@@ -376,5 +356,138 @@ router.post('/reset-password', async (req, res) => {
     res.status(500).json({ success: false, message: 'An error occurred.' });
   }
 });
+  //user update profile
+router.patch('/userupdate/:userId', upload.single('avatar'), async (req, res) => {
+try {
+  const { userId } = req.params;
+  const updatedData = req.body;
+
+  // console.log('Request received with userId:', userId);
+  // console.log('Request body:', updatedData);
+
+  if (req.file) {
+      console.log('File received:', req.file);
+      const result = await cloudinary.uploader.upload(req.file.path);
+      updatedData.avatar = result.secure_url;
+  } else {
+      console.log('No file received');
+  }
+
+  //console.log('Updating user data:', updatedData);
+
+  const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updatedData, // Pass updatedData directly
+      { new: true }
+  );
+
+ // console.log('Updated user:', updatedUser);
+
+  if (!updatedUser) {
+      console.log('User not found');
+      return res.status(404).json({ message: 'User not found' });
+  }
+
+  //console.log('Sending response');
+  return res.status(200).json({ message: 'updated successfully',updatedData });
+  //res.status(200).{ message: 'updated successfully' };
+} catch (error) {
+  console.error('Error:', error);
+  return res.status(500).json({ error: 'Internal server error', details: error.message });
+}
+
+  //const userId = req.params.userId;
   
+  // try {
+  //   const {fullname,
+  //              email,
+  //             phonenumber ,date_of_birth, country, address, } = req.body;
+
+  //   // Upload the image to Cloudinary
+    
+  //     const result = await cloudinary.uploader.upload(req.file.path);
+  //   console.log("result: ", result)    
+  //   // Update the user's profile in the database using User.findByIdAndUpdate
+  //   const updatedUser = await User.findByIdAndUpdate(
+  //     userId,
+  //     {
+  //       fullname,
+  //       email,
+  //       phonenumber,
+  //       date_of_birth: date_of_birth,
+  //       address: address,
+  //       country: country,
+  //       avatar: result.secure_url,
+  //     },
+  //     { new: true } // Return the updated document
+  //   );
+
+  //   if (!updatedUser) {
+  //     return res.status(404).json({ error: 'User not found' });
+  //   }
+
+  //   res.status(200).json({ message: 'updated successfully' });
+  // } catch (error) {
+  //   console.error('Error:', error);
+  //   res.status(500).json({ error: 'Internal server error' });
+  // }
+
+});
+
+// user single get api
+router.get('/single-user/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId; // Get the admin ID from the URL parameter
+    const data = await User.findById(userId, "-password -tokens"); // Find the admin by ID
+
+    if (!data) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true,data });
+  } catch (error) {
+    console.error('Error fetching single user:', error);
+    res.status(500).json({ success: false, message: 'An error occurred.' });
+  }
+});
+
+// update super admin
+router.patch('/admin-update/:adminId', upload.single('avatar'), async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const updatedData = req.body;
+  
+    // console.log('Request received with userId:', userId);
+    // console.log('Request body:', updatedData);
+  
+    if (req.file) {
+        console.log('File received:', req.file);
+        const result = await cloudinary.uploader.upload(req.file.path);
+        updatedData.avatar = result.secure_url;
+    } else {
+        console.log('No file received');
+    }
+  
+    //console.log('Updating user data:', updatedData);
+  
+    const updatedUser = await Admin.findByIdAndUpdate(
+      adminId,
+        updatedData, // Pass updatedData directly
+        { new: true }
+    );
+  
+   // console.log('Updated user:', updatedUser);
+  
+    if (!updatedUser) {
+        console.log('User not found');
+        return res.status(404).json({ message: 'User not found' });
+    }
+  
+    //console.log('Sending response');
+    return res.status(200).json({ message: 'updated successfully',updatedData });
+    //res.status(200).{ message: 'updated successfully' };
+  } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  }});
   module.exports = router;

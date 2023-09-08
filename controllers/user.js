@@ -4,9 +4,19 @@ const Document = require('../models/documents');
 const sharp = require('sharp');
 const multer = require('multer');
 
-
+const cloudinary = require('cloudinary').v2;
+          
+cloudinary.config({ 
+  cloud_name: 'dzq1h0xyu', 
+  api_key: '345126432123499', 
+  api_secret: 'cqCvcU_hqshoESszVszEnB5-D_8' 
+});
 exports.createUser = async (req, res)=>{
-    const {fullname, email, phonenumber,password,} = req.body;
+    const {fullname, email, phonenumber,password,
+      date_of_birth,
+      country,
+      address,
+      avatar} = req.body;
     const isNewUser = await User.isThisEmailInUse(email);
     if(!isNewUser)
        return res.json({
@@ -18,13 +28,98 @@ exports.createUser = async (req, res)=>{
         email,
         phonenumber,
         password,
-        
+        date_of_birth,
+        country,
+        address,
+        avatar
        });
-       await user .save();
+       await user.save();
        res.json({
         success:true,user
        });
 } ;
+
+// create profile
+
+// exports.createProfile = async (req, res) => {
+//   try {
+//     const {userId} = req.params
+//     const { date_of_birth, country, address } = req.body;
+//     const data = await User.findById(userId);
+//     console.log(data)
+//     // Assuming you have user authentication in place, you can access the user from req.user.
+//     //const user = req.user;
+
+//     // Check if the user exists.
+//     if (!data) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'User not found',
+//       });
+//     }
+
+//     // Check if an image file is uploaded.
+//     if (!req.file) {
+//       return res.status(400).json({ error: 'No image file provided' });
+//     }
+
+//     // Upload the image to Cloudinary.
+//     const result = await cloudinary.uploader.upload(req.file.path);
+
+//     // Create a new profile for the user.
+//     const userProfile = await User({
+//       date_of_birth,
+//       country,
+//       address,
+//       avatar: result.secure_url,
+//     });
+
+//     // Save the user profile.
+//     await userProfile.save();
+
+//     return res.json({
+//       success: true,
+//       user: userProfile,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Internal server error',
+//     });
+//   }
+// };
+
+
+
+
+
+
+
+// exports.createProfile = async (req, res)=>{
+//   const {date_of_birth, country, address,avatar,} = req.body;
+//   const isNewUser = await User.findById(user._id);
+//   if(!isNewUser)
+//      return res.json({
+//       success:false,
+//       message:'User not found'
+//      });
+//      if (!req.file) {
+//       return res.status(400).json({ error: "No image file provided" });
+//   }
+//     const result = await cloudinary.uploader.upload(req.file.path);
+//     console.log(result)
+//      const user = await User({
+//       date_of_birth,
+//       country,
+//       address,
+//       avatar:result.secure_url
+//      });
+//      await user.save();
+//      res.json({
+//       success:true,user
+//      });
+// } ;
 // for super admin
 // exports.createAdmin = async (req, res)=>{
 //   const {fullname, email, phonenumber,password, type} = req.body;

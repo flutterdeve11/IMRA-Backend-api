@@ -4,20 +4,20 @@
  const userSchema= new mongoose.Schema({
     fullname: {
         type: String,
-        required: true,
+        //required: true,
       },
       email: {
         type: String,
-        required: true,
+        //required: true,
         unique: true,
       },
       phonenumber:{
         type: String,
-        required: true,
+        //required: true,
       },
       password: {
         type: String,
-        required: true,
+        //required: true,
       },
       // type: {
       //   type: Number,
@@ -25,8 +25,21 @@
       //   enum: [1, 2,3,4], // 1 for regular user, 2 for admin
         
       // },
-     
-      avatar: String,
+      date_of_birth: {
+        type: String,
+       
+      },
+      country: {
+        type: String,
+       
+      },
+      address: {
+        type: String,
+       
+      },
+      avatar:{
+        type:String
+      } ,
       tokens: [{ type: Object }],
      
  });
