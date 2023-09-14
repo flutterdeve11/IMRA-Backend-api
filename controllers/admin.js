@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const  Admin = require('../models/admin');
+const Admin = require('../models/admin');
 // const {cloudinary} = require('../middlewares/clouddary')
 
 const cloudinary = require('cloudinary').v2;
@@ -99,12 +99,12 @@ exports.createAdmin = async (req, res) => {
         message: 'admin not found, with the given email!',
       });
   
-    const isMatch = await admin.comparepassword(password);
-    if (!isMatch)
-      return res.json({
-        success: false,
-        message: 'email / password does not match!',
-      });
+    // const isMatch = await admin.comparepassword(password);
+    // if (!isMatch)
+    //   return res.json({
+    //     success: false,
+    //     message: 'email / password does not match!',
+    //   });
     const superAdmin = admin.type === 1;
     const hospitalAdmin = admin.type === 2;
     const reception = admin.type === 3;
@@ -138,3 +138,35 @@ exports.createAdmin = async (req, res) => {
   
     res.json({ success: 1, message: 'login successfully', data: adminInfo, token });
   };
+  //const Admin = require('../models/Admin');
+
+  // Controller method to toggle admin's is_active status
+  exports.toggleActiveStatus = async (req, res) => {
+    const { adminId } = req.params;
+    try {
+        const inactive_admin = await Admin.findById(adminId);
+        console.log(inactive_admin)
+        if (!inactive_admin) {
+            return res.status(404).json({ message: "there is no admin found" });
+        }
+        inactive_admin.is_active = !inactive_admin.is_active;
+        await inactive_admin.save();
+        res.status(200).json(inactive_admin);
+    } catch (error) {
+        res.status(500).json({
+            message: "An error occured ",
+            error: error.message,
+        });
+    }
+}
+  
+  
+
+
+
+  
+  
+  
+  
+  
+

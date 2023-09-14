@@ -3,7 +3,7 @@ const  User = require('../models/user');
 const Document = require('../models/documents');
 const sharp = require('sharp');
 const multer = require('multer');
-
+const bcrypt= require('bcrypt');
 const cloudinary = require('cloudinary').v2;
           
 cloudinary.config({ 
@@ -11,6 +11,7 @@ cloudinary.config({
   api_key: '345126432123499', 
   api_secret: 'cqCvcU_hqshoESszVszEnB5-D_8' 
 });
+//user create  register
 exports.createUser = async (req, res)=>{
     const {fullname, email, phonenumber,password,
       date_of_birth,
@@ -38,165 +39,7 @@ exports.createUser = async (req, res)=>{
         success:true,user
        });
 } ;
-
-// create profile
-
-// exports.createProfile = async (req, res) => {
-//   try {
-//     const {userId} = req.params
-//     const { date_of_birth, country, address } = req.body;
-//     const data = await User.findById(userId);
-//     console.log(data)
-//     // Assuming you have user authentication in place, you can access the user from req.user.
-//     //const user = req.user;
-
-//     // Check if the user exists.
-//     if (!data) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'User not found',
-//       });
-//     }
-
-//     // Check if an image file is uploaded.
-//     if (!req.file) {
-//       return res.status(400).json({ error: 'No image file provided' });
-//     }
-
-//     // Upload the image to Cloudinary.
-//     const result = await cloudinary.uploader.upload(req.file.path);
-
-//     // Create a new profile for the user.
-//     const userProfile = await User({
-//       date_of_birth,
-//       country,
-//       address,
-//       avatar: result.secure_url,
-//     });
-
-//     // Save the user profile.
-//     await userProfile.save();
-
-//     return res.json({
-//       success: true,
-//       user: userProfile,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({
-//       success: false,
-//       message: 'Internal server error',
-//     });
-//   }
-// };
-
-
-
-
-
-
-
-// exports.createProfile = async (req, res)=>{
-//   const {date_of_birth, country, address,avatar,} = req.body;
-//   const isNewUser = await User.findById(user._id);
-//   if(!isNewUser)
-//      return res.json({
-//       success:false,
-//       message:'User not found'
-//      });
-//      if (!req.file) {
-//       return res.status(400).json({ error: "No image file provided" });
-//   }
-//     const result = await cloudinary.uploader.upload(req.file.path);
-//     console.log(result)
-//      const user = await User({
-//       date_of_birth,
-//       country,
-//       address,
-//       avatar:result.secure_url
-//      });
-//      await user.save();
-//      res.json({
-//       success:true,user
-//      });
-// } ;
-// for super admin
-// exports.createAdmin = async (req, res)=>{
-//   const {fullname, email, phonenumber,password, type} = req.body;
-//   const isNewUser = await User.isThisEmailInUse(email);
-//   if(!isNewUser)
-//      return res.json({
-//       success:false,
-//       message:'This email is already in use ,try sing-in'
-//      });
-//      const user = await User({
-//       fullname,
-//       email,
-//       phonenumber,
-//       password,
-//       type,
-//      });
-//      await user .save();
-//      res.json({
-//       success:true,user
-//      });
-// } ;
-// //for hospital admin
-// exports.createHospitalAdmin = async (req, res)=>{
-//   const {fullname, email, phonenumber,password, type} = req.body;
-//   const isNewUser = await User.isThisEmailInUse(email);
-//   if(!isNewUser)
-//      return res.json({
-//       success:false,
-//       message:'This email is already in use ,try sing-in'
-//      });
-//      const user = await User({
-//       fullname,
-//       email,
-//       phonenumber,
-//       password,
-//       type,
-//      });
-//      await user .save();
-//      res.json({
-//       success:true,user
-//      });
-// } ;
-// // for hospital reception
-// exports.createReception = async (req, res)=>{
-//   const {fullname, email, phonenumber,password, type} = req.body;
-//   const isNewUser = await User.isThisEmailInUse(email);
-//   if(!isNewUser)
-//      return res.json({
-//       success:false,
-//       message:'This email is already in use ,try sing-in'
-//      });
-//      const user = await User({
-//       fullname,
-//       email,
-//       phonenumber,
-//       password,
-//       type,
-//      });
-//      await user .save();
-//      res.json({
-//       success:true,user
-//      });
-// } ;
-
-const storage = multer.memoryStorage(); // Store files in memory as buffer
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'application/pdf' || file.mimetype === 'image/png') {
-        cb(null, true); // Accept the file
-    } else {
-        cb(new Error('Only PDF or PNG files are allowed.'), false); // Reject the file
-    }
-};
-
-const upload = multer({
-    storage,
-    fileFilter,
-});
+// 
 //for document 
 exports.createDocument = async (req, res) => {
   try {
@@ -253,11 +96,7 @@ exports.createDocument = async (req, res) => {
       });
   }
 };
-  
-  
-    
-
-
+  // user login 
 exports.userSignIn = async (req, res) => {
     const { email, password } = req.body;
   
@@ -275,9 +114,9 @@ exports.userSignIn = async (req, res) => {
         success: false,
         message: 'email / password does not match!',
       });
-    const superAdmin = user.type === 2;
-    const hospitalAdmin = user.type === 3;
-    const reception = user.type === 4;
+    // const superAdmin = user.type === 2;
+    // const hospitalAdmin = user.type === 3;
+    // const reception = user.type === 4;
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: '1d',
     });
@@ -302,44 +141,14 @@ exports.userSignIn = async (req, res) => {
       fullname: user.fullname,
       email: user.email,
       phonenumber:user.phonenumber,
-      superAdmin,hospitalAdmin,reception,
+      //superAdmin,hospitalAdmin,reception,
       avatar: user.avatar ? user.avatar : '',
     };
   
     res.json({ success: 1, message: 'login successfully', data: userInfo, token });
   };
   
-//   exports.uploadProfile = async (req, res) => {
-//     const { user } = req;
-//     if (!user)
-//       return res
-//         .status(401)
-//         .json({ success: false, message: 'unauthorized access!' });
-  
-//     try {
-//       const result = await cloudinary.uploader.upload(req.file.path, {
-//         public_id: `${user._id}_profile`,
-//         width: 500,
-//         height: 500,
-//         crop: 'fill',
-//       });
-  
-//       const updatedUser = await User.findByIdAndUpdate(
-//         user._id,
-//         { avatar: result.url },
-//         { new: true }
-//       );
-//       res
-//         .status(201)
-//         .json({ success: true, message: 'Your profile has updated!' });
-//     } catch (error) {
-//       res
-//         .status(500)
-//         .json({ success: false, message: 'server error, try after some time' });
-//       console.log('Error while uploading profile image', error.message);
-//     }
-//   };
-  
+// user logout
   exports.signOut = async (req, res) => {
     if (req.headers && req.headers.authorization) {
       const token = req.headers.authorization.split(' ')[1];
@@ -358,12 +167,64 @@ exports.userSignIn = async (req, res) => {
     }
 
   };
+// user chagne password but not work 
+  exports.changePassword = async (req, res) => {
+    const { userId, currentPassword, newPassword } = req.body;
+  
+    try {
+      // Find the user by their ID
+      const user = await User.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found with the provided ID.',
+        });
+      }
+  
+      // Check if the current password matches the stored password
+      const isMatch = await user.comparepassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: 'Current password is incorrect.',
+        });
+      }
+  
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+  
+      // Update the user's password
+      user.password = hashedPassword;
+  
+      // Save the updated user object to the database
+      await user.save();
+  
+      return res.status(200).json({
+        success: true,
+        message: 'Password changed successfully.',
+      });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'An error occurred while changing the password.',
+      });
+    }
+  };
 
-  // exports.getUserProfile= async(req,res)=>{
-  //   const user= await User.findById(req.headers._id);
-  //   if(user)
 
+
+  //const storage = multer.memoryStorage(); // Store files in memory as buffer
+  // const fileFilter = (req, file, cb) => {
+  //     if (file.mimetype === 'application/pdf' || file.mimetype === 'image/png') {
+  //         cb(null, true); // Accept the file
+  //     } else {
+  //         cb(new Error('Only PDF or PNG files are allowed.'), false); // Reject the file
+  //     }
   // };
-
-
-
+  
+  // const upload = multer({
+  //     storage,
+  //     fileFilter,
+  // });

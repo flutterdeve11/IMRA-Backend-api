@@ -42,6 +42,7 @@
       } ,
       tokens: [{ type: Object }],
      
+     
  });
 
  userSchema.pre('save',function(next){

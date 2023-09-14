@@ -1,5 +1,5 @@
 const mongoose= require('mongoose');
-const bcrypt= require('bcrypt');
+//const bcrypt= require('bcrypt');
 
 const adminSchema= new mongoose.Schema({
    fullname: {
@@ -31,7 +31,6 @@ const adminSchema= new mongoose.Schema({
      },
      title:{
       type:String,
-      required:true
      },
 
      addHospital:{
@@ -59,30 +58,34 @@ const adminSchema= new mongoose.Schema({
       default: 0,   // Default value (0 for false)
       enum: [0, 1],
     },
+    is_active: {
+      type: Boolean,
+      default: true, // Default value is true, indicating the admin is active
+    },
      tokens: [{ type: Object }],
     
      
 });
 
-adminSchema.pre('save',function(next){
-   if(this.isModified('password')){
-       bcrypt.hash(this.password,8,(err, hash)=>{
-           if(err) return next(err);
-           this.password=hash;
-           next();
-       })
-   }
-});
+// adminSchema.pre('save',function(next){
+//    if(this.isModified('password')){
+//        bcrypt.hash(this.password,8,(err, hash)=>{
+//            if(err) return next(err);
+//            this.password=hash;
+//            next();
+//        })
+//    }
+// });
 
-adminSchema.methods.comparepassword= async function(password){
-   if (!password) throw new Error('Password is mission, can not compare!');
-   try {
-       const result = await bcrypt.compare(password, this.password);
-       return result;
-     } catch (error) {
-       console.log('Error while comparing password!', error.message);
-     }
-};
+// adminSchema.methods.comparepassword= async function(password){
+//    if (!password) throw new Error('Password is mission, can not compare!');
+//    try {
+//        const result = await bcrypt.compare(password, this.password);
+//        return result;
+//      } catch (error) {
+//        console.log('Error while comparing password!', error.message);
+//      }
+// };
 
 // adminSchema.statics.isThisEmailInUse = async function (email){
 //    if (!email) throw new Error('Invalid Email');

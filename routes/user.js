@@ -5,6 +5,8 @@ const multer=  require('multer');
 const User= require('../models/user');
 const Admin = require('../models/admin');
 const Document= require('../models/documents')
+const MedicalHistory = require('../models/medicalhistory')
+const MedicationHistory= require('../models/medicinehistory')
 const cloudinary = require('cloudinary').v2;
           
 cloudinary.config({ 
@@ -13,10 +15,15 @@ cloudinary.config({
   api_secret: 'cqCvcU_hqshoESszVszEnB5-D_8' 
 });
 
+ const{
+  createMedicalHistory,
+  createMedicationHistory
+ }=require('../controllers/medical_history_controller');
 const {
     createUser,
     userSignIn,
     createProfile,
+    changePassword,
    // uploadProfile,
     signOut,
 } = require('../controllers/user');
@@ -31,6 +38,8 @@ const {
   adminSignIn,
   createHospitalAdmin,
   createReception,
+  toggleActiveStatus,
+  
 
 } = require('../controllers/admin');
 
@@ -72,6 +81,8 @@ const upload = multer({ storage, });
  //validateUserSignUp,
  //userVlidation,
  createAdmin);
+
+
  router.post('/create-hospitaladmin',validateUserSignUp,userVlidation,createHospitalAdmin);
  router.post('/create-hospital-recept',validateUserSignUp,userVlidation,createReception);
  router.post('/create-document',upload.single('document'), createDocument);
@@ -79,6 +90,9 @@ const upload = multer({ storage, });
  router.post('/sign-in-admin',validateUserSignIn,userVlidation,adminSignIn);
  router.post('/sign-out',isAuth,signOut);
 router.post('/create-hospital',createHospital);
+router.post('/create-medicalhistory',createMedicalHistory)
+router.post('/create-medicationhistory',createMedicationHistory)
+router.post('/reset-password',changePassword);
 
 // creat user profile api start
  router.post('/create-profile/:userId', upload.single('avatar'), async (req, res) => {
@@ -119,6 +133,26 @@ router.post('/create-hospital',createHospital);
       res.json({ success: true, data });
     } catch (error) {
       console.error('Error fetching hospitals:', error);
+      res.status(500).json({ success: false, message: 'An error occurred.' });
+    }
+  });
+
+
+  //get single hospital 
+  router.get('/hospital/:hospitalId', async (req, res) => {
+    try {
+      const hospitalId = req.params.hospitalId;
+  
+      // Use findById to find a hospital by its ID
+      const hospital = await Hospital.findById(hospitalId);
+  
+      if (!hospital) {
+        return res.status(404).json({ success: false, message: 'Hospital not found.' });
+      }
+  
+      res.json({ success: true, data: hospital });
+    } catch (error) {
+      console.error('Error fetching hospital:', error);
       res.status(500).json({ success: false, message: 'An error occurred.' });
     }
   });
@@ -326,36 +360,68 @@ router.delete('/delete-reception/:id', async (req, res) => {
     }
   });
 
-  
 // reset password
+
 // Reset password using token
-router.post('/reset-password', async (req, res) => {
-  try {
-    const { email, token, newPassword } = req.body;
+// router.post('/reset-password', async (req, res) => {
+//   try {
+//     const { email, token, newPassword } = req.body;
 
-    // Find the user by email and check if the token is valid and not expired
-    const user = await User.findOne({
-      email,
-      resetToken: token,
-      resetTokenExpiration: { $gt: 1 }
-    });
+//     // Find the user by email and check if the token is valid and not expired
+//     const user = await User.findOne({
+//       email,
+//       resetToken: token,
+//       //resetTokenExpiration: { $gt: 1 } // Check if the token is not expired
+//     });
 
-    if (!user) {
-      return res.json({ success: false, message: 'Invalid or expired token.' });
-    }
+//     if (!user) {
+//       return res.status(400).json({ success: false, message: 'Invalid or expired token.' });
+//     }
 
-    // Update the user's password and clear the reset token
-    user.password = newPassword;
-    user.resetToken = undefined;
-    user.resetTokenExpiration = undefined;
-    await user.save();
+//     // Hash the new password before saving it
+//     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    res.json({ success: true, message: 'Password reset successful.' });
-  } catch (error) {
-    console.error('Error resetting password:', error);
-    res.status(500).json({ success: false, message: 'An error occurred.' });
-  }
-});
+//     // Update the user's password and reset token fields
+//     user.password = hashedPassword;
+//     user.resetToken = null;
+//     user.resetTokenExpiration = null;
+
+//     // Save the updated user object to the database
+//     await user.save();
+
+//     return res.status(200).json({ success: true, message: 'Password reset successfully.' });
+//   } catch (error) {
+//     console.error('Error resetting password:', error);
+//     return res.status(500).json({ success: false, message: 'An error occurred while resetting the password.' });
+//   }
+
+
+  // try {
+  //   const { email, token, newPassword } = req.body;
+
+  //   // Find the user by email and check if the token is valid and not expired
+  //   const user = await User.findOne({
+  //     email,
+  //     resetToken: token,
+  //     resetTokenExpiration: { $gt: 1 }
+  //   });
+
+  //   if (!user) {
+  //     return res.json({ success: false, message: 'Invalid or expired token.' });
+  //   }
+
+  //   // Update the user's password and clear the reset token
+  //   user.password = newPassword;
+  //   user.resetToken = undefined;
+  //   user.resetTokenExpiration = undefined;
+  //   await user.save();
+
+  //   res.json({ success: true, message: 'Password reset successful.' });
+  // } catch (error) {
+  //   console.error('Error resetting password:', error);
+  //   res.status(500).json({ success: false, message: 'An error occurred.' });
+  // }
+//});
   //user update profile
 router.patch('/userupdate/:userId', upload.single('avatar'), async (req, res) => {
 try {
@@ -490,4 +556,49 @@ router.patch('/admin-update/:adminId', upload.single('avatar'), async (req, res)
     console.error('Error:', error);
     return res.status(500).json({ error: 'Internal server error', details: error.message });
   }});
+  // is_active api 
+router.patch('/toggle-active-status/:adminId', toggleActiveStatus );
+// get  medical History 
+router.get('/medical-history/:userId', async (req, res) => {
+  try {
+    // Extract the medical history record ID from the request parameters
+    const userId = req.params.userId;
+
+    // Fetch the medical history record by its ID
+    const medicalHistoryRecord = await MedicalHistory.find({user:userId});
+     console.log(userId)
+     console.log(medicalHistoryRecord)
+    // Check if the record exists
+    if (!medicalHistoryRecord) {
+      return res.status(404).json({ error: "Medical history record not found" });
+    }
+
+    // Return the medical history record data as a JSON response
+    res.status(200).json({ "success ":1, "data":medicalHistoryRecord});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+//Get Medication history 
+router.get('/medication-history/:userId', async (req, res) => {
+  try {
+    // Extract the medical history record ID from the request parameters
+    const userId = req.params.userId;
+
+    // Fetch the medical history record by its ID
+    const medicationHistoryRecord = await MedicationHistory.find({user:userId});
+    // Check if the record exists
+    if (!medicationHistoryRecord) {
+      return res.status(404).json({ error: "Medication history record not found" });
+    }
+
+    // Return the medical history record data as a JSON response
+    res.status(200).json({ "success ":1, "data":medicationHistoryRecord});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+ 
   module.exports = router;
